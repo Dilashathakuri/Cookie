@@ -1,9 +1,12 @@
-// ignore_for_file: prefer_const_constructors, prefer_const_declarations, avoid_print, use_build_context_synchronously, body_might_complete_normally_nullable, unnecessary_null_comparison, unnecessary_string_interpolations
+// ignore_for_file: prefer_const_constructors, unnecessary_null_comparison, body_might_complete_normally_nullable, unnecessary_string_interpolations, use_build_context_synchronously, avoid_print, sort_child_properties_last
+
+import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
 
+import 'package:gap/gap.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:practice/auth/login_screen.dart';
 import 'package:practice/core/theme/colors.dart';
 import 'package:practice/data/repo/sign_repo.dart';
@@ -29,36 +32,21 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController confirmPasswordController =
       TextEditingController();
 
-  // final url = "http://192.168.1.66:3002/api/signup";
+  File? _image;
+  final picker = ImagePicker();
 
-  // Future<void> signup(String name, String email, String contact,
-  //     String address, String password, String confirmPassword) async {
-  //   final response = await http.post(Uri.parse(url),
-  //       headers: <String, String>{
-  //         "Content-Type": "application/json;charset=UTF-8",
-  //       },
-  //       body: jsonEncode(<String, String>{
-  //         "name": name,
-  //         "email": email,
-  //         "phone": contact,
-  //         "address": address,
-  //         "password": password,
-  //         "confirmPassword": confirmPassword,
-  //       }));
+  Future<void> _pickImage() async {
+    final pickedImage = await picker.pickImage(source: ImageSource.gallery);
 
-  //   print(response.body);
-  //   print(response.statusCode.toString());
-  //   if (response.statusCode == 201) {
-  //     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-  //       backgroundColor: Colors.green,
-  //       content: Text("Signup successfull"),
-  //     ));
-  //     Navigator.pushReplacement(
-  //       context,
-  //       MaterialPageRoute(builder: (context) => const LoginScreen()),
-  //     );
-  //   }
-  // }
+    if (pickedImage != null) {
+      setState(() {
+        _image = File(pickedImage.path);
+      });
+    } else {
+      print('No image selected');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final signupViewModel = Provider.of<SignupViewModel>(context);
@@ -168,7 +156,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   obscureText: passwordObscured ? true : false,
                   controller: confirmPasswordController,
                   decoration: InputDecoration(
-                    hintText: 'confirm Password',
+                    hintText: 'Confirm Password',
                     suffixIcon: IconButton(
                       onPressed: () {
                         setState(() {
@@ -187,97 +175,123 @@ class _SignupScreenState extends State<SignupScreen> {
                     }
                   },
                 ),
+                Gap(16),
+                ElevatedButton(
+                  onPressed: () {
+                    _image == null
+                        ? _pickImage()
+                        : showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return Container(
+                                child: Dialog(
+                                    shape: Border.all(),
+                                    child: Image.file(
+                                      _image!,
+                                      width: 200,
+                                      height: 200,
+                                      fit: BoxFit.cover,
+                                    )),
+                                width: 300,
+                                height: 300,
+                              );
+                            });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                          _image != null ? 'profile image' : 'upload an image'),
+                      IconButton(
+                        onPressed: () {
+                          if (_image != null) ;
+                          setState(() {
+                            _image = null;
+                          });
+                        },
+                        icon: Icon(
+                          _image != null ? Icons.close : Icons.image,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 Gap(50),
                 signupViewModel.isLoading
                     ? CircularProgressIndicator()
                     : Center(
                         child: GestureDetector(
-                            onTap: () async {
-                              if (_formKey.currentState!.validate()) {
-                                final signupRepo = SignupRepo(
-                                    name: nameController.text.trim(),
-                                    email: emailController.text.trim(),
-                                    contact: contactController.text.trim(),
-                                    address: addressController.text.trim(),
-                                    password: passwordController.text.trim(),
-                                    confirmPassword:
-                                        confirmPasswordController.text.trim());
-                                try {
-                                  final response =
-                                      await signupViewModel.signup(signupRepo);
-                                  if (response.message != null) {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(SnackBar(
-                                      backgroundColor: Colors.green,
-                                      content: Text('${response.message}'),
-                                    ));
-                                  }
-                                } catch (e) {
-                                  throw Exception('Failed to signup');
+                          onTap: () async {
+                            if (_formKey.currentState!.validate()) {
+                              final signupRepo = SignupRepo(
+                                name: nameController.text.trim(),
+                                email: emailController.text.trim(),
+                                contact: contactController.text.trim(),
+                                address: addressController.text.trim(),
+                                password: passwordController.text.trim(),
+                                confirmPassword:
+                                    confirmPasswordController.text.trim(),
+                              );
+                              try {
+                                final response =
+                                    await signupViewModel.signup(signupRepo);
+                                if (response.message != null) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(SnackBar(
+                                    backgroundColor: Colors.green,
+                                    content: Text('${response.message}'),
+                                  ));
                                 }
-
-                                // final name = nameController.text;
-                                // final email = emailController.text;
-                                // final contact = contactController.text;
-                                // final address = addressController.text;
-
-                                // final password = passwordController.text;
-                                // final confirmPassword =
-                                //     confirmPasswordController.text;
-                                // signup(name, email, contact, address, password,
-                                //     confirmPassword);
+                              } catch (e) {
+                                throw Exception('Failed to signup');
                               }
-                            },
-                            child: GestureDetector(
-                              onTap: () => Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => LoginScreen())),
-                              child: CustomRaisedButton(
-                                  isButton: true, label: 'Sign up'),
-                            ))),
+                            }
+                          },
+                          child: GestureDetector(
+                            onTap: () => Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => LoginScreen(),
+                              ),
+                            ),
+                            child: CustomRaisedButton(
+                              isButton: true,
+                              label: 'Sign up',
+                            ),
+                          ),
+                        ),
+                      ),
                 Gap(20),
                 Center(
                   child: RichText(
-                      text: TextSpan(
-                    style: TextStyle(color: Colors.black),
-                    children: [
-                      TextSpan(text: 'Already have an account? '),
-                      TextSpan(
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () {
-                            Navigator.push(
+                    text: TextSpan(
+                      style: TextStyle(color: Colors.black),
+                      children: [
+                        TextSpan(text: 'Already have an account? '),
+                        TextSpan(
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) =>
-                                        const SignupScreen()));
-                          },
-                        text: ' Login',
-                        style: TextStyle(
-                          decoration: TextDecoration.underline,
-                          color: Colors.black,
+                                  builder: (context) => const SignupScreen(),
+                                ),
+                              );
+                            },
+                          text: ' Login',
+                          style: TextStyle(
+                            decoration: TextDecoration.underline,
+                            color: Colors.black,
+                          ),
                         ),
-                      ),
-                    ],
-                  )),
+                      ],
+                    ),
+                  ),
                 ),
-                // Row(
-                //   mainAxisAlignment: MainAxisAlignment.center,
-                //   children: [
-                //     Text('Already have an account?'),
-                //     TextButton(
-                //         onPressed: () {
-                //           Navigator.pushReplacement(
-                //               context,
-                //               MaterialPageRoute(
-                //                   builder: (context) => LoginScreen()));
-                //         },
-                //         child: Text(
-                //           'login',
-                //           style: TextStyle(decoration: TextDecoration.underline),
-                //         ))
-                //   ],
-                // )
               ],
             ),
           ),
